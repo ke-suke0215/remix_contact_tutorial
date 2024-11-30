@@ -1,12 +1,30 @@
+import { json } from "@remix-run/node";
 import {
   Form,
+  Link,
   Links,
   Meta,
+  Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
 
+import appStylesHref from "./app.css?url";
+import { getContacts } from "./data";
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: appStylesHref },
+];
+
+export const loader = async () => {
+  const contacts = await getContacts();
+  return json({ contacts });
+};
+
 export default function App() {
+  const { contacts } = useLoaderData<typeof loader>();
+
   return (
     <html lang="en">
       <head>
@@ -21,13 +39,13 @@ export default function App() {
           <div>
             <Form id="search-form" role="search">
               <input
-                id="q"
                 aria-label="Search contacts"
+                id="q"
+                name="q"
                 placeholder="Search"
                 type="search"
-                name="q"
               />
-              <div id="search-spinner" aria-hidden hidden={true} />
+              <div aria-hidden hidden={true} id="search-spinner" />
             </Form>
             <Form method="post">
               <button type="submit">New</button>
@@ -36,15 +54,41 @@ export default function App() {
           <nav>
             <ul>
               <li>
-                <a href={`/contacts/1`}>Your Name</a>
+                <Link to={`/contacts/1`}>Your Name</Link>
               </li>
               <li>
-                <a href={`/contacts/2`}>Your Friend</a>
+                <Link to={`/contacts/2`}>Your Friend</Link>
               </li>
             </ul>
           </nav>
+          <nav>
+            {contacts.length ? (
+              <ul>
+                {contacts.map((contact) => (
+                  <li key={contact.id}>
+                    <Link to={`contacts/${contact.id}`}>
+                      {contact.first || contact.last ? (
+                        <>
+                          {contact.first} {contact.last}
+                        </>
+                      ) : (
+                        <i>名前なし</i>
+                      )}{" "}
+                      {contact.favorite ? <span>★</span> : null}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                <i>連絡先がありません</i>
+              </p>
+            )}
+          </nav>
         </div>
-
+        <div id="detail">
+          <Outlet />
+        </div>
         <ScrollRestoration />
         <Scripts />
       </body>
